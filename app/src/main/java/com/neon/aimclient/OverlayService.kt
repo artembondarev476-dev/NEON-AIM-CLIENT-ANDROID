@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
@@ -24,11 +26,13 @@ class OverlayService : Service() {
     private var panel: View? = null
     private var panelParams: WindowManager.LayoutParams? = null
     private var panelVisible = false
+    private var hudView: FovHudView? = null
 
     override fun onCreate() {
         super.onCreate()
         startForeground(41, makeNotification())
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        showHud()
         showPill()
     }
 
@@ -105,6 +109,60 @@ class OverlayService : Service() {
             .setDuration(260).setInterpolator(AccelerateDecelerateInterpolator()).start()
     }
 
+
+    // A real, touch-transparent visual HUD. It never reads or changes game state.
+    private fun showHud() {
+        val view = FovHudView(this)
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        )
+        windowManager.addView(view, params)
+        hudView = view
+    }
+
+    private inner class FovHudView(context: android.content.Context) : View(context) {
+        private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = dp(2).toFloat()
+            color = Color.rgb(66, 218, 255)
+        }
+        private val reticlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = dp(2).toFloat()
+            strokeCap = Paint.Cap.ROUND
+            color = Color.rgb(190, 70, 255)
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val prefs = getSharedPreferences("neon", MODE_PRIVATE)
+            val cx = width / 2f
+            val cy = height / 2f
+            val maxRadius = minOf(width, height) * 0.47f
+
+            if (prefs.getBoolean("aim_bot_enabled", false)) {
+                val fov = prefs.getInt("aim_bot_fov", 90).coerceIn(0, 360)
+                val radius = maxRadius * (fov / 360f)
+                if (radius > 0f) canvas.drawCircle(cx, cy, radius, ringPaint)
+            }
+
+            if (prefs.getBoolean("client_aim_enabled", false)) {
+                val arm = dp(9).toFloat()
+                val gap = dp(4).toFloat()
+                canvas.drawLine(cx - arm - gap, cy, cx - gap, cy, reticlePaint)
+                canvas.drawLine(cx + gap, cy, cx + arm + gap, cy, reticlePaint)
+                canvas.drawLine(cx, cy - arm - gap, cx, cy - gap, reticlePaint)
+                canvas.drawLine(cx, cy + gap, cx, cy + arm + gap, reticlePaint)
+            }
+        }
+    }
+
     private fun togglePanel() {
         if (panelVisible) hidePanel() else showPanel()
     }
@@ -134,7 +192,7 @@ class OverlayService : Service() {
         container.addView(header)
         container.addView(makeAimSection(
             "AIM BOT",
-            "Автонаведение — только визуальный переключатель",
+            "Визуальный FOV-круг; не наводит оружие",
             "aim_bot_enabled",
             "aim_bot_fov",
             prefs
@@ -151,7 +209,7 @@ class OverlayService : Service() {
         container.addView(divider)
         container.addView(makeAimSection(
             "CLIENT AIM",
-            "Изменение траектории пуль — только визуальный переключатель",
+            "Визуальный маркер прицела; не меняет полёт пуль",
             "client_aim_enabled",
             "client_aim_fov",
             prefs
@@ -222,6 +280,7 @@ class OverlayService : Service() {
             prefs.edit().putBoolean(enabledKey, next).apply()
             toggle.text = if (next) "ON" else "OFF"
             toggle.background = toggleBackground(next)
+            hudView?.invalidate()
         }
         section.addView(titleRow)
 
@@ -250,6 +309,7 @@ class OverlayService : Service() {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 fovLabel.text = "FOV: ${progress}°"
                 if (fromUser) prefs.edit().putInt(fovKey, progress).apply()
+                hudView?.invalidate()
             }
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -364,9 +424,11 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         panel?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
+        hudView?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
         pill?.let { if (it.isAttachedToWindow) windowManager.removeView(it) }
         panel = null
         pill = null
+        hudView = null
         panelVisible = false
         super.onDestroy()
     }
