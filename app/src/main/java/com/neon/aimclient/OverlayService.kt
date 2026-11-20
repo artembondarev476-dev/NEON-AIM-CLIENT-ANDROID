@@ -36,13 +36,13 @@ class OverlayService : Service() {
         val channelId = "neon_overlay"
         if (Build.VERSION.SDK_INT >= 26) {
             val channel = NotificationChannel(
-                channelId, "NEON floating controls", NotificationManager.IMPORTANCE_LOW
+                channelId, "Z Client floating controls", NotificationManager.IMPORTANCE_LOW
             )
             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }
         val builder = if (Build.VERSION.SDK_INT >= 26)
             Notification.Builder(this, channelId) else Notification.Builder(this)
-        return builder.setContentTitle("NEON AIM CLIENT")
+        return builder.setContentTitle("Z Client")
             .setContentText("Floating watermark is active")
             .setSmallIcon(android.R.drawable.ic_menu_view)
             .build()
@@ -69,10 +69,10 @@ class OverlayService : Service() {
             setPadding(dp(19), dp(11), dp(19), dp(11))
             background = GradientDrawable(
                 GradientDrawable.Orientation.LEFT_RIGHT,
-                intArrayOf(Color.rgb(37, 25, 75), Color.rgb(14, 32, 61))
+                intArrayOf(Color.rgb(44, 12, 90), Color.rgb(7, 28, 58))
             ).apply {
                 cornerRadius = dp(40).toFloat()
-                setStroke(dp(2), Color.rgb(155, 92, 255))
+                setStroke(dp(2), Color.rgb(183, 54, 255))
             }
             elevation = dp(10).toFloat()
         }
@@ -86,7 +86,7 @@ class OverlayService : Service() {
             }
         }
         val title = TextView(this).apply {
-            text = "NEON  •  AIM CLIENT"
+            text = "Z CLIENT"
             textSize = 12f
             letterSpacing = 0.08f
             setTextColor(Color.WHITE)
@@ -119,16 +119,16 @@ class OverlayService : Service() {
             background = GradientDrawable().apply {
                 setColor(Color.argb(246, 10, 15, 34))
                 cornerRadius = dp(23).toFloat()
-                setStroke(dp(2), Color.rgb(120, 83, 245))
+                setStroke(dp(2), Color.rgb(164, 55, 255))
             }
             elevation = dp(12).toFloat()
         }
 
         val header = TextView(this).apply {
-            text = "NEON CONTROL  •  DRAG HERE"
+            text = "Z CLIENT  •  DRAG HERE"
             textSize = 11f
             letterSpacing = 0.06f
-            setTextColor(Color.rgb(194, 158, 255))
+            setTextColor(Color.rgb(205, 150, 255))
             setPadding(dp(3), dp(2), dp(3), dp(12))
         }
         container.addView(header)
@@ -237,7 +237,7 @@ class OverlayService : Service() {
         val fovLabel = TextView(this).apply {
             text = "FOV: ${currentFov}°"
             textSize = 12f
-            setTextColor(Color.rgb(80, 210, 255))
+            setTextColor(Color.rgb(65, 205, 255))
         }
         section.addView(fovLabel)
 
