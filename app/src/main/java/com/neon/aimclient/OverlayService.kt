@@ -111,12 +111,13 @@ class OverlayService : Service() {
 
     private fun showPanel() {
         if (panelVisible) return
-        val size = dp(getSharedPreferences("neon", MODE_PRIVATE).getInt("fov", 180))
+        val prefs = getSharedPreferences("neon", MODE_PRIVATE)
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(15), dp(12), dp(15), dp(13))
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            minimumWidth = dp(310)
             background = GradientDrawable().apply {
-                setColor(Color.argb(242, 13, 17, 38))
+                setColor(Color.argb(246, 10, 15, 34))
                 cornerRadius = dp(23).toFloat()
                 setStroke(dp(2), Color.rgb(120, 83, 245))
             }
@@ -128,27 +129,41 @@ class OverlayService : Service() {
             textSize = 11f
             letterSpacing = 0.06f
             setTextColor(Color.rgb(194, 158, 255))
-            setPadding(dp(3), dp(2), dp(3), dp(11))
+            setPadding(dp(3), dp(2), dp(3), dp(12))
         }
-        val ring = View(this).apply {
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(Color.TRANSPARENT)
-                setStroke(dp(3), Color.argb(220, 65, 190, 255))
-            }
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                gravity = Gravity.CENTER
+        container.addView(header)
+        container.addView(makeAimSection(
+            "AIM BOT",
+            "Автонаведение — только визуальный переключатель",
+            "aim_bot_enabled",
+            "aim_bot_fov",
+            prefs
+        ))
+        val divider = View(this).apply {
+            setBackgroundColor(Color.argb(100, 150, 130, 220))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
+            ).apply {
+                topMargin = dp(12)
+                bottomMargin = dp(12)
             }
         }
+        container.addView(divider)
+        container.addView(makeAimSection(
+            "CLIENT AIM",
+            "Изменение траектории пуль — только визуальный переключатель",
+            "client_aim_enabled",
+            "client_aim_fov",
+            prefs
+        ))
+
         val footer = TextView(this).apply {
-            text = "VISUAL FOV  •  WATERMARK TO CLOSE"
+            text = "VISUAL SETTINGS ONLY  •  NO GAME CONTROL"
             textSize = 9f
             gravity = Gravity.CENTER
             setTextColor(Color.LTGRAY)
-            setPadding(0, dp(10), 0, 0)
+            setPadding(0, dp(14), 0, dp(1))
         }
-        container.addView(header)
-        container.addView(ring)
         container.addView(footer)
 
         val params = overlayParams(dp(18), dp(105))
@@ -166,6 +181,91 @@ class OverlayService : Service() {
             .translationY(0f).setDuration(230)
             .setInterpolator(AccelerateDecelerateInterpolator()).start()
     }
+
+    private fun makeAimSection(
+        titleText: String,
+        descriptionText: String,
+        enabledKey: String,
+        fovKey: String,
+        prefs: android.content.SharedPreferences
+    ): LinearLayout {
+        val section = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        val titleRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val title = TextView(this).apply {
+            text = titleText
+            textSize = 15f
+            letterSpacing = 0.08f
+            setTextColor(Color.WHITE)
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        titleRow.addView(title, LinearLayout.LayoutParams(0, dp(32), 1f))
+
+        val enabled = prefs.getBoolean(enabledKey, false)
+        val toggle = TextView(this).apply {
+            text = if (enabled) "ON" else "OFF"
+            textSize = 12f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            setPadding(dp(18), dp(7), dp(18), dp(7))
+            background = toggleBackground(enabled)
+            isClickable = true
+            isFocusable = true
+        }
+        titleRow.addView(toggle)
+        toggle.setOnClickListener {
+            val next = !prefs.getBoolean(enabledKey, false)
+            prefs.edit().putBoolean(enabledKey, next).apply()
+            toggle.text = if (next) "ON" else "OFF"
+            toggle.background = toggleBackground(next)
+        }
+        section.addView(titleRow)
+
+        val description = TextView(this).apply {
+            text = descriptionText
+            textSize = 10f
+            setTextColor(Color.rgb(165, 174, 198))
+            setPadding(0, dp(3), 0, dp(8))
+        }
+        section.addView(description)
+
+        val currentFov = prefs.getInt(fovKey, 90).coerceIn(0, 360)
+        val fovLabel = TextView(this).apply {
+            text = "FOV: ${currentFov}°"
+            textSize = 12f
+            setTextColor(Color.rgb(80, 210, 255))
+        }
+        section.addView(fovLabel)
+
+        val slider = android.widget.SeekBar(this).apply {
+            max = 360
+            progress = currentFov
+            contentDescription = "$titleText FOV"
+        }
+        slider.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                fovLabel.text = "FOV: ${progress}°"
+                if (fromUser) prefs.edit().putInt(fovKey, progress).apply()
+            }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
+        section.addView(slider, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(38)
+        ))
+        return section
+    }
+
+    private fun toggleBackground(enabled: Boolean): GradientDrawable =
+        GradientDrawable().apply {
+            cornerRadius = dp(30).toFloat()
+            setColor(if (enabled) Color.rgb(19, 115, 105) else Color.rgb(54, 59, 79))
+            setStroke(dp(1), if (enabled) Color.rgb(70, 235, 205) else Color.rgb(115, 125, 150))
+        }
 
     private fun hidePanel() {
         val current = panel ?: run {
