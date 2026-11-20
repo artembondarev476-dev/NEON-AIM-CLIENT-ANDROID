@@ -281,6 +281,10 @@ class OverlayService : Service() {
             toggle.text = if (next) "ON" else "OFF"
             toggle.background = toggleBackground(next)
             hudView?.invalidate()
+            if (next) {
+                hidePanel()
+                launchSandstrike()
+            }
         }
         section.addView(titleRow)
 
@@ -318,6 +322,34 @@ class OverlayService : Service() {
             LinearLayout.LayoutParams.MATCH_PARENT, dp(38)
         ))
         return section
+    }
+
+
+    // Launch the installed Sandstrike app when the user enables a visual option.
+    private fun launchSandstrike() {
+        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val matches = packageManager.queryIntentActivities(launcher, 0)
+        val game = matches.firstOrNull {
+            val label = it.loadLabel(packageManager).toString()
+            label.contains("sandstrike", ignoreCase = true) ||
+                label.contains("sand strike", ignoreCase = true)
+        }
+        val launchIntent = game?.activityInfo?.let {
+            Intent(Intent.ACTION_MAIN).apply {
+                component = android.content.ComponentName(it.packageName, it.name)
+                addCategory(Intent.CATEGORY_LAUNCHER)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            }
+        }
+        if (launchIntent != null) {
+            try {
+                startActivity(launchIntent)
+            } catch (_: Exception) {
+                android.widget.Toast.makeText(this, "Не удалось открыть Sandstrike", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            android.widget.Toast.makeText(this, "Sandstrike не найдена. Установи игру или проверь её название.", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun toggleBackground(enabled: Boolean): GradientDrawable =
