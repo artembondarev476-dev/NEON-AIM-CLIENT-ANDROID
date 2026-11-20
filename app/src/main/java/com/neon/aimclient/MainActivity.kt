@@ -13,8 +13,9 @@ import android.widget.SeekBar
 import android.widget.TextView
 
 class MainActivity : Activity() {
-    private val purple = Color.rgb(160, 90, 255)
-    private val bg = Color.rgb(13, 15, 28)
+    private val purple = Color.rgb(174, 55, 255)
+    private val cyan = Color.rgb(45, 205, 255)
+    private val bg = Color.rgb(5, 7, 19)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,15 +29,16 @@ class MainActivity : Activity() {
             setBackgroundColor(bg)
         }
         root.addView(TextView(this).apply {
-            text = "NEON AIM CLIENT"
+            text = "Z CLIENT"
             textSize = 25f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER
         })
         root.addView(TextView(this).apply {
-            text = "FLOATING VISUAL PANEL  •  ANDROID"
+            text = "NEON EDITION  •  ANDROID"
             textSize = 11f
-            setTextColor(purple)
+            setTextColor(cyan)
+            letterSpacing = 0.16f
             gravity = Gravity.CENTER
             setPadding(0, 8, 0, 28)
         })
@@ -96,7 +98,7 @@ class MainActivity : Activity() {
     private fun actionButton(caption: String, action: () -> Unit) = Button(this).apply {
         text = caption
         setTextColor(Color.WHITE)
-        backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(72, 42, 120))
+        backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(75, 27, 145))
         setOnClickListener { action() }
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
