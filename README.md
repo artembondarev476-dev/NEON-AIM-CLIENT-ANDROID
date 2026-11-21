@@ -1,16 +1,22 @@
-# NEON AIM CLIENT ANDROID
+# Z Visuals
 
-Android companion app with a neon purple/blue floating visual panel.
+Z Visuals is an independent Android demo app for a Telegram-inspired visual profile, virtual Stars balance, collectible gifts, and a local gift inventory.
 
-## Features
-- Android permission flow for display-over-other-apps.
-- Movable floating panel.
-- Adjustable visual FOV ring size, saved locally.
-- GitHub Actions workflow builds a debug APK and uploads it as an artifact.
+## Current prototype
+- Telegram-inspired dark interface
+- Local demo Stars balance
+- Local collectible inventory and demo purchase flow
+- Local profile name
+- Demo gift-send flow that removes an item from the local inventory
+- Clear demo labels: no real Telegram Stars, Telegram gifts, or NFTs are created or transferred
 
-## Important limitation
-This is a visual overlay/demo only. It does not read or modify another app's memory, automate aiming, control Sandstrike, or bypass anti-cheat. The FOV ring is a visual guide and is not connected to game targeting.
+## Not implemented yet
+- Shared accounts and profiles across devices
+- Phone-number registration and SMS verification
+- Contacts and user discovery
+- Server-backed balances, inventory, and gift delivery
+
+Those features require a backend, secure phone verification, database rules, and abuse-prevention controls. Do not enter real phone numbers or Telegram credentials into the prototype.
 
 ## Build
-GitHub Actions runs on pushes to main and via the Actions tab using the Android APK workflow.
-Download the neon-aim-client-debug artifact after a successful run.
+GitHub Actions builds a debug APK and publishes it as the `z-visuals-demo` artifact.
