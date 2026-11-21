@@ -7,51 +7,36 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import android.widget.Toast
-
+import android.widget.*
+ 
 class MainActivity : Activity() {
-    private val bg = Color.rgb(15, 19, 26)
-    private val panel = Color.rgb(25, 31, 41)
-    private val accent = Color.rgb(48, 129, 237)
-    private val muted = Color.rgb(151, 164, 181)
+    private val bg = Color.rgb(13, 18, 27)
+    private val panel = Color.rgb(24, 32, 44)
+    private val accent = Color.rgb(67, 139, 245)
+    private val muted = Color.rgb(155, 170, 190)
     private val prefs by lazy { getSharedPreferences("zvisuals_demo", MODE_PRIVATE) }
     private lateinit var root: LinearLayout
     private lateinit var content: LinearLayout
-    private var page = "home"
+    private var page = "chats"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
-        window.decorView.systemUiVisibility = 0
         render()
     }
 
     private fun render() {
-        root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(bg)
-        }
+        root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(bg) }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(12))
         }
-        val brandRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        brandRow.addView(text("Z Visuals", 23f, Color.WHITE, true), LinearLayout.LayoutParams(0, -2, 1f))
-        brandRow.addView(chip("DEMO MODE", Color.rgb(38, 91, 153)))
-        header.addView(brandRow)
-        header.addView(text("Визуальная коллекция и подарки", 12f, muted).apply {
-            setPadding(0, dp(4), 0, 0)
-        })
+        val top = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        top.addView(text("Z Visuals", 24f, Color.WHITE, true), LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(chip("PREVIEW", Color.rgb(42, 91, 151)))
+        header.addView(top)
+        header.addView(text(headerSubtitle(), 12f, muted).apply { setPadding(0, dp(4), 0, 0) })
         root.addView(header)
 
         val scroll = ScrollView(this).apply { isFillViewport = true }
@@ -66,221 +51,238 @@ class MainActivity : Activity() {
         val nav = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(dp(8), dp(8), dp(8), dp(10))
-            background = rounded(panel, 0, 0, 0, 0)
+            setPadding(dp(5), dp(7), dp(5), dp(8))
+            background = rounded(panel, 18)
         }
-        nav.addView(navButton("Главная", "home"), LinearLayout.LayoutParams(0, dp(52), 1f))
-        nav.addView(navButton("Подарки", "gifts"), LinearLayout.LayoutParams(0, dp(52), 1f))
-        nav.addView(navButton("Профиль", "profile"), LinearLayout.LayoutParams(0, dp(52), 1f))
+        listOf(Triple("Чаты", "chats", "▤"), Triple("Контакты", "contacts", "♙"),
+            Triple("Подарки", "gifts", "🎁"), Triple("Профиль", "profile", "◉"),
+            Triple("Настройки", "settings", "⚙")).forEach { item ->
+            val b = TextView(this).apply {
+                text = "${item.third}\n${item.first}"
+                textSize = 10f
+                gravity = Gravity.CENTER
+                setTextColor(if (page == item.second) Color.WHITE else muted)
+                setPadding(dp(2), dp(5), dp(2), dp(5))
+                setOnClickListener { page = item.second; render() }
+            }
+            nav.addView(b, LinearLayout.LayoutParams(0, dp(52), 1f))
+        }
         root.addView(nav)
         setContentView(root)
     }
 
+    private fun headerSubtitle() = when(page) {
+        "contacts" -> "Люди"
+        "gifts" -> "Коллекция и подарки"
+        "profile" -> "Твой профиль и оформление"
+        "settings" -> "Настройки приложения"
+        else -> "Сообщения"
+    }
+
     private fun renderPage() {
         content.removeAllViews()
-        when (page) {
+        when(page) {
+            "contacts" -> showTelegramRoadmap("Контакты", "Поиск людей, список контактов и синхронизация адресной книги появятся после подключения Telegram API.")
             "gifts" -> showGifts()
             "profile" -> showProfile()
-            else -> showHome()
+            "settings" -> showSettings()
+            else -> showChats()
         }
     }
 
-    private fun showHome() {
-        val balance = prefs.getInt("stars", 1200)
-        val nftCount = prefs.getInt("nft_count", 2)
-        val balanceCard = card()
-        balanceCard.addView(text("МОИ ЗВЁЗДЫ", 11f, muted, true))
-        balanceCard.addView(text("★  $balance", 34f, Color.WHITE, true).apply {
-            setPadding(0, dp(7), 0, dp(3))
+    private fun showChats() {
+        sectionTitle("Все чаты")
+        content.addView(card().apply {
+            addView(text("Добро пожаловать в Z Visuals", 19f, Color.WHITE, true))
+            addView(text("Здесь будет список твоих личных чатов, групп и каналов.", 13f, muted).apply { setPadding(0, dp(8), 0, dp(12)) })
+            addView(action("О проекте", accent) { info("Telegram-интеграция", "Для настоящих чатов, звонков и синхронизации нужна интеграция с Telegram API/TDLib и отдельная проверенная сборка.") })
         })
-        balanceCard.addView(text("Тестовый баланс — не связан с Telegram Stars", 11f, muted))
-        balanceCard.addView(action("Начислить 100 ★", accent) {
-            prefs.edit().putInt("stars", balance + 100).apply()
-            render()
-        })
-        content.addView(balanceCard)
-
-        sectionTitle("Коллекция")
-        content.addView(text("В инвентаре: $nftCount подарков", 13f, muted).apply {
-            setPadding(dp(2), 0, 0, dp(10))
-        })
-        val giftCard = card()
-        giftCard.addView(text("🎁  Космический кот", 18f, Color.WHITE, true))
-        giftCard.addView(text("Коллекционный подарок · 350 ★", 12f, muted).apply {
-            setPadding(0, dp(5), 0, dp(12))
-        })
-        giftCard.addView(action("Получить за 350 ★", accent) { buyGift() })
-        content.addView(giftCard)
-
-        val second = card()
-        second.addView(text("💎  Сапфировое сердце", 18f, Color.WHITE, true))
-        second.addView(text("Коллекционный подарок · 500 ★", 12f, muted).apply {
-            setPadding(0, dp(5), 0, dp(12))
-        })
-        second.addView(action("Получить за 500 ★", accent) { buyGift(500) })
-        content.addView(second)
-
-        sectionTitle("Важно")
-        content.addView(note("Это самостоятельный демонстрационный проект. Баланс и коллекция пока хранятся только на этом устройстве. Они не меняют Telegram-профиль, не создают реальные NFT и не отправляют настоящие подарки."))
+        sectionTitle("План клиента")
+        content.addView(note("Интерфейс чатов — первый экран. Реальные диалоги пока не подключены: приложение не авторизовано в Telegram и не отправляет сообщения."))
+        content.addView(rowAction("Профиль и оформление") { page="profile"; render() })
+        content.addView(rowAction("Настройки анимаций") { page="settings"; render() })
     }
 
-    private fun showGifts() {
-        sectionTitle("Мои подарки")
-        val count = prefs.getInt("nft_count", 2)
+    private fun showTelegramRoadmap(title: String, description: String) {
+        sectionTitle(title)
         content.addView(card().apply {
-            addView(text("🎁  Коллекция", 20f, Color.WHITE, true))
-            addView(text("Предметов: $count", 13f, muted).apply { setPadding(0, dp(6), 0, dp(12)) })
-            if (count > 0) {
-                addView(action("Подарить пользователю (демо)", accent) { showSendDialog() })
-            } else {
-                addView(text("Пока нет подарков. Загляни в каталог.", 13f, muted))
-            }
+            addView(text("Раздел Z Visuals", 18f, Color.WHITE, true))
+            addView(text(description, 13f, muted).apply { setPadding(0, dp(8), 0, dp(12)) })
+            addView(chip("ТРЕБУЕТ TELEGRAM API", Color.rgb(70, 77, 91)))
         })
-        sectionTitle("История")
-        val history = prefs.getString("history", "") ?: ""
-        content.addView(note(if (history.isBlank()) "Здесь появятся демонстрационные действия." else history))
     }
 
     private fun showProfile() {
         val username = prefs.getString("username", "zvisuals_user") ?: "zvisuals_user"
-        sectionTitle("Профиль")
-        content.addView(card().apply {
-            addView(text("👤  $username", 20f, Color.WHITE, true))
-            addView(text("Публичный демо-профиль Z Visuals", 12f, muted).apply {
-                setPadding(0, dp(5), 0, dp(12))
-            })
-            addView(action("Изменить имя пользователя", accent) { editUsername() })
+        val displayName = prefs.getString("display_name", "Мой профиль") ?: "Мой профиль"
+        val bio = prefs.getString("bio", "Добро пожаловать в мой Z Visuals ✨") ?: ""
+        val banner = prefs.getInt("banner", 0)
+        val bannerColors = listOf(Color.rgb(42,75,125), Color.rgb(87,48,112), Color.rgb(30,105,103), Color.rgb(115,68,43))
+        val preview = card().apply {
+            background = rounded(bannerColors[banner.coerceIn(0,3)], 22)
+            addView(text("Z VISUALS PROFILE", 10f, Color.WHITE, true))
+            addView(text("◉  $displayName", 23f, Color.WHITE, true).apply { setPadding(0, dp(12), 0, dp(4)) })
+            addView(text("@$username", 13f, Color.WHITE))
+            addView(text(bio, 13f, Color.WHITE).apply { setPadding(0, dp(12), 0, dp(4)) })
+            addView(text("Обложка · стиль · эффекты", 10f, Color.WHITE))
+        }
+        sectionTitle("Предпросмотр профиля")
+        content.addView(preview)
+        content.addView(action("Изменить имя и описание", accent) { editProfileText() })
+        content.addView(action("Выбрать обложку", Color.rgb(57, 76, 103)) {
+            val names = arrayOf("Ночная синяя", "Фиолетовая", "Изумрудная", "Тёплая")
+            AlertDialog.Builder(this).setTitle("Цвет обложки").setSingleChoiceItems(names, banner) { d, which ->
+                prefs.edit().putInt("banner", which).apply(); d.dismiss(); render()
+            }.setNegativeButton("Отмена", null).show()
         })
-        sectionTitle("Аккаунт")
-        content.addView(note("Вход по реальному номеру телефона и общие профили пока не включены. Для этого нужно подключить серверную авторизацию по SMS и базу данных. Номер телефона не запрашивается и не сохраняется в этой демо-версии."))
-        content.addView(note("Z Visuals — независимый проект, не связанный с Telegram."))
+        content.addView(action("Стиль имени и шрифт", Color.rgb(57, 76, 103)) { chooseFont() })
+        sectionTitle("Эффекты профиля")
+        val effects = arrayOf("Снег", "Дождь", "Сакура", "Конфетти", "Сердечки", "Искры", "Северное сияние")
+        effects.forEachIndexed { i, name ->
+            val key = "effect_$i"
+            val cb = CheckBox(this).apply {
+                text = name
+                textSize = 14f
+                setTextColor(Color.WHITE)
+                buttonTintList = android.content.res.ColorStateList.valueOf(accent)
+                isChecked = prefs.getBoolean(key, false)
+                setOnCheckedChangeListener { _, checked -> prefs.edit().putBoolean(key, checked).apply() }
+            }
+            content.addView(cb)
+        }
+        content.addView(note("Пока это локальный предпросмотр на этом устройстве. Чтобы другие пользователи Z Visuals увидели оформление, потребуется серверный профиль и синхронизация."))
     }
 
-    private fun buyGift(cost: Int = 350) {
-        val balance = prefs.getInt("stars", 1200)
-        if (balance < cost) {
-            Toast.makeText(this, "Не хватает демонстрационных звёзд", Toast.LENGTH_SHORT).show()
-            return
-        }
-        prefs.edit()
-            .putInt("stars", balance - cost)
-            .putInt("nft_count", prefs.getInt("nft_count", 2) + 1)
-            .apply()
-        Toast.makeText(this, "Демо-подарок добавлен в коллекцию", Toast.LENGTH_SHORT).show()
-        render()
-    }
-
-    private fun showSendDialog() {
-        val field = EditText(this).apply {
-            hint = "@username получателя"
-            setSingleLine(true)
-        }
-        AlertDialog.Builder(this)
-            .setTitle("Демо-отправка подарка")
-            .setMessage("Подарок будет списан из локальной коллекции. Общая доставка появится после подключения сервера.")
-            .setView(field)
-            .setNegativeButton("Отмена", null)
-            .setPositiveButton("Продолжить") { _, _ ->
-                val target = field.text.toString().trim()
-                if (target.isBlank()) {
-                    Toast.makeText(this, "Укажи имя получателя", Toast.LENGTH_SHORT).show()
-                } else {
-                    val count = prefs.getInt("nft_count", 0)
-                    if (count > 0) {
-                        val old = prefs.getString("history", "") ?: ""
-                        prefs.edit().putInt("nft_count", count - 1)
-                            .putString("history", "Демо-подарок для $target\n$old").apply()
-                        Toast.makeText(this, "Демо-подарок списан из коллекции", Toast.LENGTH_SHORT).show()
-                        render()
-                    }
-                }
-            }.show()
-    }
-
-    private fun editUsername() {
-        val field = EditText(this).apply {
-            setSingleLine(true)
-            setText(prefs.getString("username", "zvisuals_user"))
-            hint = "username"
-        }
-        AlertDialog.Builder(this).setTitle("Имя пользователя").setView(field)
-            .setNegativeButton("Отмена", null)
-            .setPositiveButton("Сохранить") { _, _ ->
-                val value = field.text.toString().trim().removePrefix("@")
-                if (value.length >= 3) {
-                    prefs.edit().putString("username", value).apply()
+    private fun editProfileText() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(18), dp(4), dp(18), 0) }
+        val name = EditText(this).apply { hint = "Отображаемое имя"; setText(prefs.getString("display_name", "Мой профиль")) }
+        val username = EditText(this).apply { hint = "username"; setText(prefs.getString("username", "zvisuals_user")) }
+        val bio = EditText(this).apply { hint = "О себе"; setText(prefs.getString("bio", "")); minLines = 2 }
+        box.addView(name); box.addView(username); box.addView(bio)
+        AlertDialog.Builder(this).setTitle("Редактирование профиля").setView(box)
+            .setNegativeButton("Отмена", null).setPositiveButton("Сохранить") { _, _ ->
+                val u = username.text.toString().trim().removePrefix("@")
+                if (u.length >= 3) {
+                    prefs.edit().putString("display_name", name.text.toString().trim().ifBlank { "Пользователь" })
+                        .putString("username", u).putString("bio", bio.text.toString().trim()).apply()
                     render()
-                } else Toast.makeText(this, "Минимум 3 символа", Toast.LENGTH_SHORT).show()
+                } else Toast.makeText(this, "Имя пользователя — минимум 3 символа", Toast.LENGTH_SHORT).show()
             }.show()
     }
 
-    private fun navButton(label: String, target: String): TextView = TextView(this).apply {
-        text = label
-        textSize = 12f
-        gravity = Gravity.CENTER
-        setTextColor(if (page == target) Color.WHITE else muted)
-        setOnClickListener { page = target; render() }
+    private fun chooseFont() {
+        val names = arrayOf("Обычный", "Жирный", "Моноширинный")
+        AlertDialog.Builder(this).setTitle("Шрифт имени")
+            .setSingleChoiceItems(names, prefs.getInt("font_style", 0)) { d, which ->
+                prefs.edit().putInt("font_style", which).apply()
+                d.dismiss()
+                Toast.makeText(this, "Стиль сохранён для предпросмотра", Toast.LENGTH_SHORT).show()
+            }.setNegativeButton("Закрыть", null).show()
+    }
+
+    private fun showSettings() {
+        sectionTitle("Анимации")
+        val all = prefs.getBoolean("animations", true)
+        content.addView(card().apply {
+            addView(text("Плавность интерфейса", 17f, Color.WHITE, true))
+            addView(text("Управляй движением экранов и визуальными эффектами.", 12f, muted).apply { setPadding(0, dp(5), 0, dp(8)) })
+            addView(switchRow("Все анимации", "animations", true))
+            addView(switchRow("Эффекты профиля", "profile_fx", all))
+            addView(switchRow("Переходы между экранами", "transitions", all))
+            addView(switchRow("Уменьшить интенсивность", "reduced_motion", all))
+        })
+        sectionTitle("Прочее")
+        content.addView(rowAction("Оформление профиля") { page="profile"; render() })
+        content.addView(rowAction("О приложении") { info("Z Visuals", "Независимый Android-проект. Подключение Telegram, синхронизация и серверные функции ещё находятся в разработке.") })
+        content.addView(note("Переключатели сохраняются на устройстве. На этом этапе они задают предпочтения; полная система анимаций будет подключаться вместе с готовыми экранами."))
+    }
+
+    private fun switchRow(label: String, key: String, enabled: Boolean): Switch {
+        return Switch(this).apply {
+            text = label
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            isEnabled = enabled
+            isChecked = prefs.getBoolean(key, if (key == "animations") true else true)
+            buttonTintList = android.content.res.ColorStateList.valueOf(accent)
+            setOnCheckedChangeListener { _, checked ->
+                prefs.edit().putBoolean(key, checked).apply()
+                if (key == "animations" && !checked) {
+                    prefs.edit().putBoolean("profile_fx", false).putBoolean("transitions", false).apply()
+                    render()
+                }
+            }
+        }
+    }
+
+    private fun showGifts() {
+        val balance = prefs.getInt("stars", 1200)
+        val count = prefs.getInt("nft_count", 2)
+        sectionTitle("Мои подарки")
+        content.addView(card().apply {
+            addView(text("★  $balance демо-звёзд", 22f, Color.WHITE, true))
+            addView(text("В коллекции: $count предметов", 13f, muted).apply { setPadding(0, dp(5), 0, dp(12)) })
+            addView(action("Получить подарок за 350 ★", accent) {
+                if (prefs.getInt("stars", 1200) >= 350) {
+                    prefs.edit().putInt("stars", prefs.getInt("stars",1200)-350)
+                        .putInt("nft_count", prefs.getInt("nft_count",2)+1).apply()
+                    render()
+                } else Toast.makeText(this, "Не хватает демо-звёзд", Toast.LENGTH_SHORT).show()
+            })
+        })
+        content.addView(note("Демо-подарки и звёзды существуют только внутри локального прототипа. Это не настоящие Telegram Stars или NFT."))
+    }
+
+    private fun rowAction(label: String, click: () -> Unit) = TextView(this).apply {
+        text = "$label   ›"
+        textSize = 14f
+        setTextColor(Color.WHITE)
+        setPadding(dp(15), dp(17), dp(15), dp(17))
+        background = rounded(panel, 14)
+        setOnClickListener { click() }
+        val lp = LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = dp(8); layoutParams = lp
+    }
+
+    private fun info(title: String, message: String) {
+        AlertDialog.Builder(this).setTitle(title).setMessage(message).setPositiveButton("Понятно", null).show()
     }
 
     private fun sectionTitle(value: String) {
-        content.addView(text(value, 17f, Color.WHITE, true).apply {
-            setPadding(dp(2), dp(18), 0, dp(10))
-        })
+        content.addView(text(value, 17f, Color.WHITE, true).apply { setPadding(dp(2), dp(17), 0, dp(10)) })
     }
 
-    private fun card(): LinearLayout = LinearLayout(this).apply {
+    private fun card() = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL
         setPadding(dp(16), dp(16), dp(16), dp(16))
         background = rounded(panel, 18)
-        elevation = dp(2).toFloat()
-        val lp = LinearLayout.LayoutParams(-1, -2)
-        lp.bottomMargin = dp(10)
-        layoutParams = lp
+        val lp = LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = dp(10); layoutParams = lp
     }
 
     private fun note(value: String) = TextView(this).apply {
-        text = value
-        textSize = 12f
-        setTextColor(muted)
-        setPadding(dp(14), dp(13), dp(14), dp(13))
-        background = rounded(Color.rgb(22, 29, 39), 14)
-        val lp = LinearLayout.LayoutParams(-1, -2)
-        lp.bottomMargin = dp(10)
-        layoutParams = lp
+        text = value; textSize = 12f; setTextColor(muted)
+        setPadding(dp(14), dp(13), dp(14), dp(13)); background = rounded(Color.rgb(20,27,37), 14)
+        val lp = LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = dp(9); layoutParams = lp
     }
 
-    private fun action(label: String, color: Int, onClick: () -> Unit) = Button(this).apply {
-        text = label
-        textSize = 13f
-        isAllCaps = false
-        setTextColor(Color.WHITE)
-        background = rounded(color, 12)
-        setPadding(dp(12), dp(3), dp(12), dp(3))
-        setOnClickListener { onClick() }
+    private fun action(label: String, color: Int, click: () -> Unit) = Button(this).apply {
+        text = label; textSize = 13f; isAllCaps = false; setTextColor(Color.WHITE)
+        background = rounded(color, 12); setOnClickListener { click() }
+        val lp = LinearLayout.LayoutParams(-1, -2); lp.bottomMargin = dp(8); layoutParams = lp
     }
 
     private fun chip(label: String, color: Int) = TextView(this).apply {
-        text = label
-        textSize = 9f
-        letterSpacing = 0.06f
-        setTextColor(Color.WHITE)
-        setPadding(dp(9), dp(6), dp(9), dp(6))
-        background = rounded(color, 20)
+        text = label; textSize = 9f; letterSpacing = 0.08f; setTextColor(Color.WHITE)
+        setPadding(dp(10), dp(7), dp(10), dp(7)); background = rounded(color, 20)
     }
 
     private fun text(value: String, size: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
-        text = value
-        textSize = size
-        setTextColor(color)
+        text = value; textSize = size; setTextColor(color)
         if (bold) typeface = Typeface.DEFAULT_BOLD
     }
 
-    private fun rounded(color: Int, radius: Int, stroke: Int = 0, left: Int = 0, top: Int = 0): GradientDrawable =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radius).toFloat()
-            if (stroke != 0) setStroke(dp(1), stroke)
-        }
+    private fun rounded(color: Int, radius: Int) = GradientDrawable().apply {
+        setColor(color); cornerRadius = dp(radius).toFloat()
+    }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt().coerceAtLeast(1)
 }
