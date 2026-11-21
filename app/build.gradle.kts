@@ -3,14 +3,14 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 android {
-    namespace = "com.neon.aimclient"
+    namespace = "com.zvisuals.app"
     compileSdk = 35
     defaultConfig {
-        applicationId = "com.neon.aimclient"
+        applicationId = "com.zvisuals.app"
         minSdk = 23
         targetSdk = 32
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "0.1.0"
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions {
