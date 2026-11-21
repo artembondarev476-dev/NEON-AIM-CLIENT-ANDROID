@@ -227,7 +227,7 @@ class MainActivity : Activity() {
                     prefs.edit().putInt("stars", prefs.getInt("stars",1200)-350)
                         .putInt("nft_count", prefs.getInt("nft_count",2)+1).apply()
                     render()
-                } else Toast.makeText(this, "Не хватает демо-звёзд", Toast.LENGTH_SHORT).show()
+                } else Toast.makeText(this@MainActivity, "Не хватает демо-звёзд", Toast.LENGTH_SHORT).show()
             })
         })
         content.addView(note("Демо-подарки и звёзды существуют только внутри локального прототипа. Это не настоящие Telegram Stars или NFT."))
